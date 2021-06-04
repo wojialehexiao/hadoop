@@ -230,12 +230,18 @@ public class DatanodeManager {
     final int heartbeatRecheckInterval = conf.getInt(
         DFSConfigKeys.DFS_NAMENODE_HEARTBEAT_RECHECK_INTERVAL_KEY, 
         DFSConfigKeys.DFS_NAMENODE_HEARTBEAT_RECHECK_INTERVAL_DEFAULT); // 5 minutes
+
+    // 10分30秒
     this.heartbeatExpireInterval = 2 * heartbeatRecheckInterval
         + 10 * 1000 * heartbeatIntervalSeconds;
+
+    // 1000个
     final int blockInvalidateLimit = Math.max(20*(int)(heartbeatIntervalSeconds),
         DFSConfigKeys.DFS_BLOCK_INVALIDATE_LIMIT_DEFAULT);
+
     this.blockInvalidateLimit = conf.getInt(
         DFSConfigKeys.DFS_BLOCK_INVALIDATE_LIMIT_KEY, blockInvalidateLimit);
+
     LOG.info(DFSConfigKeys.DFS_BLOCK_INVALIDATE_LIMIT_KEY
         + "=" + this.blockInvalidateLimit);
 
@@ -307,7 +313,11 @@ public class DatanodeManager {
   }
   
   void activate(final Configuration conf) {
+
+    // 管理下线的服务
     decomManager.activate(conf);
+
+    // 管理心跳
     heartbeatManager.activate(conf);
   }
 
@@ -974,6 +984,7 @@ public class DatanodeManager {
         nodeDescr.setSoftwareVersion(nodeReg.getSoftwareVersion());
   
         // register new datanode
+        // 保存Datanode
         addDatanode(nodeDescr);
         // also treat the registration message as a heartbeat
         // no need to update its timestamp
@@ -1345,6 +1356,8 @@ public class DatanodeManager {
       synchronized (datanodeMap) {
         DatanodeDescriptor nodeinfo = null;
         try {
+
+
           nodeinfo = getDatanode(nodeReg);
         } catch(UnregisteredNodeException e) {
           return new DatanodeCommand[]{RegisterCommand.REGISTER};
@@ -1360,6 +1373,7 @@ public class DatanodeManager {
           return new DatanodeCommand[]{RegisterCommand.REGISTER};
         }
 
+        // 根据心跳更新保存在NameNode中DataNode状态
         heartbeatManager.updateHeartbeat(nodeinfo, reports,
                                          cacheCapacity, cacheUsed,
                                          xceiverCount, failedVolumes,
@@ -1424,13 +1438,20 @@ public class DatanodeManager {
         }
 
         final List<DatanodeCommand> cmds = new ArrayList<DatanodeCommand>();
+
+
         //check pending replication
         List<BlockTargetPair> pendingList = nodeinfo.getReplicationCommand(
               maxTransfers);
+
+
         if (pendingList != null) {
           cmds.add(new BlockCommand(DatanodeProtocol.DNA_TRANSFER, blockPoolId,
               pendingList));
         }
+
+
+
         //check block invalidation
         Block[] blks = nodeinfo.getInvalidateBlocks(blockInvalidateLimit);
         if (blks != null) {

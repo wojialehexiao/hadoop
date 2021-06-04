@@ -128,6 +128,8 @@ class BlockPoolManager {
           new PrivilegedExceptionAction<Object>() {
             @Override
             public Object run() throws Exception {
+
+              //启动联邦对应的BPOfferService
               for (BPOfferService bpos : offerServices) {
                 bpos.start();
               }
@@ -156,6 +158,8 @@ class BlockPoolManager {
             .getNNServiceRpcAddressesForCluster(conf);
 
     synchronized (refreshNamenodesLock) {
+
+      // 重要代码
       doRefreshNamenodes(newAddressMap);
     }
   }
@@ -172,6 +176,8 @@ class BlockPoolManager {
       // Step 1. For each of the new nameservices, figure out whether
       // it's an update of the set of NNs for an existing NS,
       // or an entirely new nameservice.
+      // 正常就只有一个NameService
+      // 联邦会有多个NameService
       for (String nameserviceId : addrMap.keySet()) {
         if (bpByNameserviceId.containsKey(nameserviceId)) {
           toRefresh.add(nameserviceId);
@@ -193,18 +199,23 @@ class BlockPoolManager {
 
       
       // Step 3. Start new nameservices
+      // BPOfferService --> 一个联邦
       if (!toAdd.isEmpty()) {
         LOG.info("Starting BPOfferServices for nameservices: " +
             Joiner.on(",").useForNull("<default>").join(toAdd));
-      
+
+        // 每个联邦都会创建一个 BPOfferService
         for (String nsToAdd : toAdd) {
           ArrayList<InetSocketAddress> addrs =
             Lists.newArrayList(addrMap.get(nsToAdd).values());
+
           BPOfferService bpos = createBPOS(addrs);
           bpByNameserviceId.put(nsToAdd, bpos);
           offerServices.add(bpos);
         }
       }
+
+      // 向Namenode注册和心跳都在里面创建
       startAll();
     }
 

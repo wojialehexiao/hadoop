@@ -229,7 +229,10 @@ public class EditLogTailer {
       // disk are ignored.
       long editsLoaded = 0;
       try {
+
         editsLoaded = image.loadEdits(streams, namesystem);
+
+
       } catch (EditLogInputException elie) {
         editsLoaded = elie.getNumEditsLoaded();
         throw elie;
@@ -328,6 +331,8 @@ public class EditLogTailer {
           // state updates.
           namesystem.cpLockInterruptibly();
           try {
+
+            // 读取日志
             doTailEdits();
           } finally {
             namesystem.cpUnlock();

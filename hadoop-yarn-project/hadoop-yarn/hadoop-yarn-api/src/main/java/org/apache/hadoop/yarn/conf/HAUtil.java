@@ -77,8 +77,14 @@ public class HAUtil {
    */
   public static void verifyAndSetConfiguration(Configuration conf)
     throws YarnRuntimeException {
+
+    // yarn.resourcemanager.ha.rm-ids
     verifyAndSetRMHAIdsList(conf);
+
+    //
     verifyAndSetCurrentRMHAId(conf);
+
+    //
     verifyAndSetAllServiceAddresses(conf);
   }
 

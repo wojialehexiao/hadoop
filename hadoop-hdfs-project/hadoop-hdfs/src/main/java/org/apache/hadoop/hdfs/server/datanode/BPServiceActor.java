@@ -216,6 +216,7 @@ class BPServiceActor implements Runnable {
 
   private void connectToNNAndHandshake() throws IOException {
     // get NN proxy
+    // 创建代理
     bpNamenode = dn.connectToNN(nnAddr);
 
     // First phase of the handshake with NN - get the namespace
@@ -228,6 +229,7 @@ class BPServiceActor implements Runnable {
     bpos.verifyAndSetNamespaceInfo(nsInfo);
     
     // Second phase of the handshake with the NN.
+    // 注册
     register(nsInfo);
   }
 
@@ -689,7 +691,7 @@ class BPServiceActor implements Runnable {
 
         //
         // Every so often, send heartbeat or block-report
-        //
+        // 每隔三秒发送心跳
         if (startTime - lastHeartbeat >= dnConf.heartBeatInterval) {
           //
           // All heartbeat messages include following info:
@@ -802,6 +804,7 @@ class BPServiceActor implements Runnable {
     while (shouldRun()) {
       try {
         // Use returned registration from namenode with updated fields
+        // 注册
         bpRegistration = bpNamenode.registerDatanode(bpRegistration);
         bpRegistration.setNamespaceInfo(nsInfo);
         break;
@@ -844,11 +847,15 @@ class BPServiceActor implements Runnable {
   public void run() {
     LOG.info(this + " starting to offer service");
 
+    // 完成注册和心跳
     try {
+
+      // 使用while循环, 重试
       while (true) {
         // init stuff
         try {
           // setup storage
+          // 连接Namenode和握手 注册
           connectToNNAndHandshake();
           break;
         } catch (IOException ioe) {
@@ -871,6 +878,8 @@ class BPServiceActor implements Runnable {
 
       while (shouldRun()) {
         try {
+
+          // 发送心跳
           offerService();
         } catch (Exception ex) {
           LOG.error("Exception in BPOfferService for " + this, ex);

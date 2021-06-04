@@ -382,6 +382,8 @@ public class IPCLoggerChannel implements AsyncLogger {
 
           long rpcSendTimeNanos = System.nanoTime();
           try {
+
+            // 向JournalNodeRpcServer
             getProxy().journal(createReqInfo(),
                 segmentTxId, firstTxnId, numTxns, data);
           } catch (IOException e) {

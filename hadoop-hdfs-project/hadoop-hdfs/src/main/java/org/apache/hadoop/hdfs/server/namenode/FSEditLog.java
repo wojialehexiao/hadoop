@@ -266,6 +266,8 @@ public class FSEditLog implements LogsPurgeable {
         DFSConfigKeys.DFS_NAMENODE_EDITS_DIR_MINIMUM_KEY,
         DFSConfigKeys.DFS_NAMENODE_EDITS_DIR_MINIMUM_DEFAULT);
 
+    // NameNode本地路径
+    // JournalNode路径
     synchronized(journalSetLock) {
       journalSet = new JournalSet(minimumRedundantJournals);
 
@@ -274,11 +276,15 @@ public class FSEditLog implements LogsPurgeable {
             .contains(u);
         if (u.getScheme().equals(NNStorage.LOCAL_URI_SCHEME)) {
           StorageDirectory sd = storage.getStorageDirectory(u);
+
+          // NameNode本地路径
           if (sd != null) {
             journalSet.add(new FileJournalManager(conf, sd, storage),
                 required, sharedEditsDirs.contains(u));
           }
         } else {
+
+          //远程目录 QuorumJournalManager
           journalSet.add(createJournal(u), required,
               sharedEditsDirs.contains(u));
         }
@@ -420,11 +426,14 @@ public class FSEditLog implements LogsPurgeable {
       
       // wait if an automatic sync is scheduled
       waitIfAutoSyncScheduled();
-      
+
+      // 开启事务
       long start = beginTransaction();
       op.setTransactionId(txid);
 
       try {
+
+        // 内存写日志
         editLogStream.write(op);
       } catch (IOException ex) {
         // All journals failed, it is handled in logSync.
@@ -435,6 +444,8 @@ public class FSEditLog implements LogsPurgeable {
       endTransaction(start);
       
       // check if it is time to schedule an automatic sync
+      // 检查是否需要刷写元数据
+      // 大于256条数据就刷写一次
       if (!shouldForceSync()) {
         return;
       }
@@ -442,6 +453,7 @@ public class FSEditLog implements LogsPurgeable {
     }
     
     // sync buffered edit log entries to persistent store
+    // 写磁盘
     logSync();
   }
 
@@ -619,6 +631,8 @@ public class FSEditLog implements LogsPurgeable {
             if (journalSet.isEmpty()) {
               throw new IOException("No journals available to flush");
             }
+
+            // 交换缓冲区
             editLogStream.setReadyToFlush();
           } catch (IOException e) {
             final String msg =
@@ -644,6 +658,8 @@ public class FSEditLog implements LogsPurgeable {
       long start = monotonicNow();
       try {
         if (logStream != null) {
+
+          // 写文件
           logStream.flush();
         }
       } catch (IOException ex) {
@@ -1525,6 +1541,8 @@ public class FSEditLog implements LogsPurgeable {
     synchronized(journalSetLock) {
       Preconditions.checkState(journalSet.isOpen(), "Cannot call " +
           "selectInputStreams() on closed FSEditLog");
+
+
       selectInputStreams(streams, fromTxId, inProgressOk);
     }
 

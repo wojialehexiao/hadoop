@@ -38,7 +38,10 @@ import com.google.common.base.Preconditions;
 @InterfaceAudience.Private
 public class EditsDoubleBuffer {
 
+  // 内存1
   private TxnBuffer bufCurrent; // current buffer for writing
+
+  // 内存2
   private TxnBuffer bufReady; // buffer ready for flushing
   private final int initBufferSize;
 

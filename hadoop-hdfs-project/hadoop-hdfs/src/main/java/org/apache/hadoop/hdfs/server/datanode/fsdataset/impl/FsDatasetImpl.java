@@ -1850,6 +1850,8 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
         asyncDiskService.deleteAsync(v.obtainReference(), f,
             FsDatasetUtil.getMetaFile(f, invalidBlks[i].getGenerationStamp()),
             new ExtendedBlock(bpid, invalidBlks[i]),
+
+
             dataStorage.getTrashDirectoryForBlockFile(bpid, f));
       } catch (ClosedChannelException e) {
         LOG.warn("Volume " + v + " is closed, ignore the deletion task for " +

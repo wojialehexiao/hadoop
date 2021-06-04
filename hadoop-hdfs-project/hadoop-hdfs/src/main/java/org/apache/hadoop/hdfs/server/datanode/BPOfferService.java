@@ -121,6 +121,7 @@ class BPOfferService {
         "Must pass at least one NN.");
     this.dn = dn;
 
+    //遍历Namenode地址, 在Ha情况, 会有两个Namenode地址, 每个Namenode都对应一个BPServiceActor
     for (InetSocketAddress addr : nnAddrs) {
       this.bpServices.add(new BPServiceActor(addr, this));
     }
@@ -272,7 +273,11 @@ class BPOfferService {
 
   //This must be called only by blockPoolManager
   void start() {
+
+    //启动Namenode对应的BPServiceActor
     for (BPServiceActor actor : bpServices) {
+
+      //
       actor.start();
     }
   }

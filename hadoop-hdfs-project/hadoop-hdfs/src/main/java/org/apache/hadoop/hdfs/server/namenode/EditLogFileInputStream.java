@@ -138,6 +138,8 @@ public class EditLogFileInputStream extends EditLogInputStream {
     Preconditions.checkState(state == State.UNINIT);
     BufferedInputStream bin = null;
     try {
+
+      // 装饰者
       fStream = log.getInputStream();
       bin = new BufferedInputStream(fStream);
       tracker = new FSEditLogLoader.PositionTrackingInputStream(bin);
@@ -158,6 +160,8 @@ public class EditLogFileInputStream extends EditLogInputStream {
               "flags from log");
         }
       }
+
+      // 初始化Reader
       reader = new FSEditLogOp.Reader(dataIn, tracker, logVersion);
       reader.setMaxOpSize(maxOpSize);
       state = State.OPEN;
@@ -189,6 +193,8 @@ public class EditLogFileInputStream extends EditLogInputStream {
     switch (state) {
     case UNINIT:
       try {
+
+        // 核心代码
         init(true);
       } catch (Throwable e) {
         LOG.error("caught exception initializing " + this, e);

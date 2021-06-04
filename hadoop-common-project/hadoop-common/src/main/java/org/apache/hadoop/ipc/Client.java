@@ -704,10 +704,19 @@ public class Client {
         short numRetries = 0;
         Random rand = null;
         while (true) {
+
+          // 创建客户端网络连接
           setupConnection();
+
+          // 构建网络输入流
           InputStream inStream = NetUtils.getInputStream(socket);
+
+          // 构建网络输出流
           OutputStream outStream = NetUtils.getOutputStream(socket);
+
+          // 写连接头信息 4个属性 7个字节
           writeConnectionHeader(outStream);
+
           if (authProtocol == AuthProtocol.SASL) {
             final InputStream in2 = inStream;
             final OutputStream out2 = outStream;
@@ -755,10 +764,14 @@ public class Client {
               }
             }
           }
-        
+
+
+          // 心跳的流
           if (doPing) {
             inStream = new PingInputStream(inStream);
           }
+
+
           this.in = new DataInputStream(new BufferedInputStream(inStream));
 
           // SASL may have already buffered the stream
@@ -770,6 +783,7 @@ public class Client {
           writeConnectionContext(remoteId, authMethod);
 
           // update last activity time
+          // 最后活跃时间
           touch();
 
           if (Trace.isTracing()) {
@@ -778,6 +792,7 @@ public class Client {
 
           // start the receiver thread after the socket connection has been set
           // up
+          // 启动Connection线程
           start();
           return;
         }
@@ -970,6 +985,8 @@ public class Client {
             + connections.size());
 
       try {
+
+        // 等待数据响应
         while (waitForWork()) {//wait here for work - read or close connection
           receiveRpcResponse();
         }
@@ -1035,6 +1052,7 @@ public class Client {
                 int totalLength = d.getLength();
                 out.writeInt(totalLength); // Total Length
                 out.write(data, 0, totalLength);// RpcRequestHeader + RpcRequest
+                // 发送
                 out.flush();
               }
             } catch (IOException e) {
@@ -1438,14 +1456,25 @@ public class Client {
    * @returns the rpc response
    * Throws exceptions if there are network problems or if the remote code
    * threw an exception.
+   *
+   *
    */
   public Writable call(RPC.RpcKind rpcKind, Writable rpcRequest,
       ConnectionId remoteId, int serviceClass,
       AtomicBoolean fallbackToSimpleAuth) throws IOException {
+
+    // 第一个步骤
     final Call call = createCall(rpcKind, rpcRequest);
+
+    // 第二个步骤
     Connection connection = getConnection(remoteId, call, serviceClass,
       fallbackToSimpleAuth);
+
+
     try {
+
+      // 第三个步骤
+      // 把数据已经发到客户端
       connection.sendRpcRequest(call);                 // send the rpc request
     } catch (RejectedExecutionException e) {
       throw new IOException("connection has been closed", e);
@@ -1526,6 +1555,8 @@ public class Client {
     //block above. The reason for that is if the server happens to be slow,
     //it will take longer to establish a connection and that will slow the
     //entire system down.
+
+    // 真正建立连接
     connection.setupIOstreams(fallbackToSimpleAuth);
     return connection;
   }

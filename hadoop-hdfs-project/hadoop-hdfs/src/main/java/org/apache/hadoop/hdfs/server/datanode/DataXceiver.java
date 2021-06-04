@@ -224,7 +224,10 @@ class DataXceiver extends Receiver implements Runnable {
           } else {
             peer.setReadTimeout(dnConf.socketTimeout);
           }
+
+          //读取操作类型
           op = readOp();
+
         } catch (InterruptedIOException ignored) {
           // Time out while we wait for client rpc
           break;
@@ -248,8 +251,11 @@ class DataXceiver extends Receiver implements Runnable {
         }
 
         opStartTime = monotonicNow();
+
+        // 处理操作
         processOp(op);
         ++opsProcessed;
+
       } while ((peer != null) &&
           (!peer.isClosed() && dnConf.socketKeepaliveTimeout > 0));
     } catch (Throwable t) {
@@ -679,7 +685,7 @@ class DataXceiver extends Receiver implements Runnable {
 
       //
       // Connect to downstream machine, if appropriate
-      //
+      // 如果还有下游机器
       if (targets.length > 0) {
         InetSocketAddress mirrorTarget = null;
         // Connect to backup machine
@@ -713,6 +719,8 @@ class DataXceiver extends Receiver implements Runnable {
 
           // Do not propagate allowLazyPersist to downstream DataNodes.
           if (targetPinnings != null && targetPinnings.length > 0) {
+
+            // 向同步数据其他DataNode
             new Sender(mirrorOut).writeBlock(originalBlock, targetStorageTypes[0],
               blockToken, clientname, targets, targetStorageTypes, srcDataNode,
               stage, pipelineSize, minBytesRcvd, maxBytesRcvd,
@@ -791,6 +799,8 @@ class DataXceiver extends Receiver implements Runnable {
       // receive the block and mirror to the next target
       if (blockReceiver != null) {
         String mirrorAddr = (mirrorSock == null) ? null : mirrorNode;
+
+        // 读取数据
         blockReceiver.receiveBlock(mirrorOut, mirrorIn, replyOut,
             mirrorAddr, null, targets, false);
 

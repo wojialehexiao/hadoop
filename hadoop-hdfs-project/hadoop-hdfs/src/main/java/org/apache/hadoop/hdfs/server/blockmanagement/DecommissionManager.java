@@ -206,7 +206,9 @@ public class DecommissionManager {
           LOG.info("Starting decommission of {} {} with {} blocks", 
               node, storage, storage.numBlocks());
         }
+
         // Update DN stats maintained by HeartbeatManager
+        //
         hbManager.startDecommission(node);
         node.decommissioningStatus.setStartTime(monotonicNow());
         pendingNodes.add(node);
@@ -458,6 +460,8 @@ public class DecommissionManager {
           // we can finally mark as decommissioned.
           final boolean isHealthy =
               blockManager.isNodeHealthyForDecommission(dn);
+
+          // 完成block同步
           if (blocks.size() == 0 && isHealthy) {
             setDecommissioned(dn);
             toRemove.add(dn);
@@ -570,7 +574,11 @@ public class DecommissionManager {
           if (!blockManager.neededReplications.contains(block) &&
               blockManager.pendingReplications.getNumReplicas(block) == 0 &&
               namesystem.isPopulatingReplQueues()) {
+
+
+
             // Process these blocks only when active NN is out of safe mode.
+            // 核心代码,
             blockManager.neededReplications.add(block,
                 curReplicas,
                 num.decommissionedReplicas(),

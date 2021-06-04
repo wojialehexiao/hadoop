@@ -154,6 +154,8 @@ public class DatanodeProtocolClientSideTranslatorPB implements
     } catch (ServiceException se) {
       throw ProtobufHelper.getRemoteException(se);
     }
+
+    // 返回命令
     DatanodeCommand[] cmds = new DatanodeCommand[resp.getCmdsList().size()];
     int index = 0;
     for (DatanodeCommandProto p : resp.getCmdsList()) {

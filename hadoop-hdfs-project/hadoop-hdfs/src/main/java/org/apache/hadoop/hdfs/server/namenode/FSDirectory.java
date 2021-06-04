@@ -490,7 +490,11 @@ public class FSDirectory implements Closeable {
             fileINode.getFileReplication(),
             BlockUCState.UNDER_CONSTRUCTION,
             targets);
+
+      // 记录Block信息
       getBlockManager().addBlockCollection(blockInfo, fileINode);
+
+      // 将Block放到文件节点下
       fileINode.addBlock(blockInfo);
 
       if(NameNode.stateChangeLog.isDebugEnabled()) {
@@ -977,6 +981,8 @@ public class FSDirectory implements Closeable {
     boolean isRename = (inode.getParent() != null);
     boolean added;
     try {
+
+      // 添加子节点
       added = parent.addChild(inode, true, existing.getLatestSnapshotId());
     } catch (QuotaExceededException e) {
       updateCountNoQuotaCheck(existing, pos, counts.negation());

@@ -85,6 +85,8 @@ public class NameNodeResourceChecker {
         LOG.debug("Space available on volume '" + volume + "' is "
             + availableSpace);
       }
+
+      // 如果空间小于100M
       if (availableSpace < duReserved) {
         LOG.warn("Space available on volume '" + volume + "' is "
             + availableSpace +
@@ -130,6 +132,8 @@ public class NameNodeResourceChecker {
 
     // Add all the local edits dirs, marking some as required if they are
     // configured as such.
+
+    // 添加需要监控的磁盘 hdfs-site.xml, core-site.xml
     for (URI editsDirToCheck : localEditDirs) {
       addDirToCheck(editsDirToCheck,
           FSNamesystem.getRequiredNamespaceEditsDirs(conf).contains(
@@ -164,7 +168,11 @@ public class NameNodeResourceChecker {
     
     CheckedVolume newVolume = new CheckedVolume(dir, required);
     CheckedVolume volume = volumes.get(newVolume.getVolume());
+
+    // 添加需要检查的目录
     if (volume == null || !volume.isRequired()) {
+
+      //edit log的目录
       volumes.put(newVolume.getVolume(), newVolume);
     }
   }
@@ -178,6 +186,7 @@ public class NameNodeResourceChecker {
    *         otherwise.
    */
   public boolean hasAvailableDiskSpace() {
+    // volumes多个目录
     return NameNodeResourcePolicy.areResourcesAvailable(volumes.values(),
         minimumRedundantVolumes);
   }

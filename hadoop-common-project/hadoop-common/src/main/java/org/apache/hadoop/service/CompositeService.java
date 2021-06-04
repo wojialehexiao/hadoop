@@ -99,11 +99,15 @@ public class CompositeService extends AbstractService {
   }
 
   protected void serviceInit(Configuration conf) throws Exception {
+
+    // 获取子Service
     List<Service> services = getServices();
     if (LOG.isDebugEnabled()) {
       LOG.debug(getName() + ": initing services, size=" + services.size());
     }
     for (Service service : services) {
+
+      // 调用每个子Service的init()方法
       service.init(conf);
     }
     super.serviceInit(conf);

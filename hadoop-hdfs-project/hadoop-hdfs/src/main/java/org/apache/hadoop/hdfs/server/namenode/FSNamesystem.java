@@ -1055,14 +1055,23 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     writeLock();
     this.haContext = haContext;
     try {
+
+      // 检查Namenode元数据磁盘是否重复
       nnResourceChecker = new NameNodeResourceChecker(conf);
       checkAvailableResources();
+
+
       assert safeMode != null && !isPopulatingReplQueues();
+
       StartupProgress prog = NameNode.getStartupProgress();
       prog.beginPhase(Phase.SAFEMODE);
       prog.setTotal(Phase.SAFEMODE, STEP_AWAITING_REPORTED_BLOCKS,
         getCompleteBlocksTotal());
+
+      // HDFS的安全模式
       setBlockTotal();
+
+      // 启动重要服务
       blockManager.activate(conf);
     } finally {
       writeUnlock();
@@ -1263,6 +1272,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     dir.disableQuotaChecks();
     editLogTailer = new EditLogTailer(this, conf);
     editLogTailer.start();
+
+    // 启动checkpoint
     if (standbyShouldCheckpoint) {
       standbyCheckpointer = new StandbyCheckpointer(conf, this);
       standbyCheckpointer.start();
@@ -2348,6 +2359,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     if (!DFSUtil.isValidName(src)) {
       throw new InvalidPathException(src);
     }
+
+    // 校验副本数
     blockManager.verifyReplication(src, replication, clientMachine);
 
     boolean skipSync = false;
@@ -2364,6 +2377,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     boolean overwrite = flag.contains(CreateFlag.OVERWRITE);
     boolean isLazyPersist = flag.contains(CreateFlag.LAZY_PERSIST);
 
+    // 等待元数据加载
     waitForLoadingFSImage();
 
     /**
@@ -2386,6 +2400,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     if (provider != null) {
       readLock();
       try {
+
+        // 解析路径
         src = dir.resolvePath(pc, src, pathComponents);
         INodesInPath iip = dir.getINodesInPath4Write(src);
         // Nothing to do if the path is not within an EZ
@@ -2426,12 +2442,16 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       try {
         src = dir.resolvePath(pc, src, pathComponents);
         final INodesInPath iip = dir.getINodesInPath4Write(src);
+
+        // 创建文件
         toRemoveBlocks = startFileInternal(
             pc, iip, permissions, holder,
             clientMachine, create, overwrite,
             createParent, replication, blockSize,
             isLazyPersist, suite, protocolVersion, edek,
             logRetryCache);
+
+        // 获取文件状态
         stat = FSDirStatAndListingOp.getFileInfo(
             dir, src, false, FSDirectory.isReservedRawName(srcArg), true);
       } finally {
@@ -2551,14 +2571,19 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       Map.Entry<INodesInPath, String> parent = FSDirMkdirOp
           .createAncestorDirectories(dir, iip, permissions);
       if (parent != null) {
+
+        // 添加节点
         iip = dir.addFile(parent.getKey(), parent.getValue(), permissions,
             replication, blockSize, holder, clientMachine);
+
         newNode = iip != null ? iip.getLastINode().asFile() : null;
       }
 
       if (newNode == null) {
         throw new IOException("Unable to add " + src +  " to namespace");
       }
+
+      // 添加契约
       leaseManager.addLease(newNode.getFileUnderConstructionFeature()
           .getClientName(), src);
 
@@ -3064,6 +3089,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     }
 
     // choose targets for the new block to be allocated.
+    // 申请Block
+    // Block有副本, 获取到的是多个节点
     final DatanodeStorageInfo targets[] = getBlockManager().chooseTarget4NewBlock( 
         src, replication, clientNode, excludedNodes, blockSize, favoredNodes,
         storagePolicyID);
@@ -3106,9 +3133,13 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       // allocate new block, record block locations in INode.
       newBlock = createNewBlock();
       INodesInPath inodesInPath = INodesInPath.fromINode(pendingFile);
+
+      // 向文件树中添加block
       saveAllocatedBlock(src, inodesInPath, newBlock, targets);
 
+      // 将元数据持久化
       persistNewBlock(src, pendingFile);
+
       offset = pendingFile.computeFileSize();
     } finally {
       writeUnlock();
@@ -3672,8 +3703,11 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     try {
       checkOperation(OperationCategory.WRITE);
       checkNameNodeSafeMode("Cannot delete " + src);
+
+      // 从文件目录树删除
       toRemovedBlocks = FSDirDeleteOp.delete(
           this, src, recursive, logRetryCache);
+
       ret = toRemovedBlocks != null;
     } catch (AccessControlException e) {
       logAuditEvent(false, "delete", src);
@@ -3682,6 +3716,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       writeUnlock();
     }
     if (toRemovedBlocks != null) {
+
+      // 将待删除块, 放到对应DataNode的待删除列表, 以便下一次心跳发送出去
       removeBlocks(toRemovedBlocks); // Incremental deletion of blocks
     }
     logAuditEvent(true, "delete", src);
@@ -4482,6 +4518,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
   void registerDatanode(DatanodeRegistration nodeReg) throws IOException {
     writeLock();
     try {
+      // 获取DataNodeManager
       getBlockManager().getDatanodeManager().registerDatanode(nodeReg);
       checkSafeMode();
     } finally {
@@ -4519,6 +4556,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       //get datanode commands
       final int maxTransfer = blockManager.getMaxReplicationStreams()
           - xmitsInProgress;
+
+      // 返回命令
       DatanodeCommand[] cmds = blockManager.getDatanodeManager().handleHeartbeat(
           nodeReg, reports, blockPoolId, cacheCapacity, cacheUsed,
           xceiverCount, maxTransfer, failedVolumes, volumeFailureSummary);
@@ -5266,6 +5305,11 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
      * if DFS is empty or {@link #threshold} == 0
      */
     private boolean needEnter() {
+
+      // 进入安全模式条件
+      // 1. 可用块小于阈值
+      // 2. 活跃datanode小于阈值, 默认不启用
+      // 3. Namenode元数据磁盘可用空间小于100M
       return (threshold != 0 && blockSafe < blockThreshold) ||
         (datanodeThreshold != 0 && getNumLiveDataNodes() < datanodeThreshold) ||
         (!nameNodeHasResourcesAvailable());
@@ -5284,6 +5328,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       // if smmthread is already running, the block threshold must have been 
       // reached before, there is no need to enter the safe mode again
       if (smmthread == null && needEnter()) {
+        // 进入安全模式
         enter();
         // check if we are ready to initialize replication queues
         if (canInitializeReplQueues() && !isPopulatingReplQueues()
@@ -5323,9 +5368,13 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
      */
     private synchronized void setBlockTotal(int total) {
       this.blockTotal = total;
+
+      // 1000 * 0.999
       this.blockThreshold = (int) (blockTotal * threshold);
+
       this.blockReplQueueThreshold = 
         (int) (blockTotal * replQueueThreshold);
+
       if (haEnabled) {
         // After we initialize the block count, any further namespace
         // modifications done while in safe mode need to keep track
@@ -5334,6 +5383,8 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       }
       if(blockSafe < 0)
         this.blockSafe = 0;
+
+      // 检查安全模式
       checkMode();
     }
       
@@ -5699,8 +5750,11 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     // Calculate number of blocks under construction
     long numUCBlocks = 0;
     readLock();
+
+    // 获取所有正常构建的block
     numUCBlocks = leaseManager.getNumUnderConstructionBlocks();
     try {
+      // 所有的block - 正在构建的block = 正常的block
       return getBlocksTotal() - numUCBlocks;
     } finally {
       readUnlock();

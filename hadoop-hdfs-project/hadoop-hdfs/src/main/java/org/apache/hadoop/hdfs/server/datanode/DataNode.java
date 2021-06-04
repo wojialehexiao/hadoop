@@ -226,18 +226,23 @@ import com.google.protobuf.BlockingService;
  * from its NameNode, delete blocks or copy blocks to/from other
  * DataNodes.
  *
+ * *DataNode只维护一个关键表：块->字节流（块大小或更小）
  * The DataNode maintains just one critical table:
  *   block-> stream of bytes (of BLOCK_SIZE or less)
  *
+ *
+ * 此信息存储在本地磁盘上。DataNode在启动时向NameNode报告表的内容，之后每隔一段时间报告一次。
  * This info is stored on a local disk.  The DataNode
  * reports the table's contents to the NameNode upon startup
  * and every so often afterwards.
  *
+ * DataNodes一生都在没完没了地问NameNode做什么。NameNode不能直接将连接到DataNode；NameNode只是从DataNode调用的函数返回值
  * DataNodes spend their lives in an endless loop of asking
  * the NameNode for something to do.  A NameNode cannot connect
  * to a DataNode directly; a NameNode simply returns values from
  * functions invoked by a DataNode.
- *
+ * *DataNodes维护一个开放的服务器套接字，以便客户机代码或其他DataNodes可以读/写数据。
+ * 将此服务器的主机/端口报告给NameNode，然后NameNode将信息发送给可能感兴趣的客户端或其他datanode。
  * DataNodes maintain an open server socket so that client code 
  * or other DataNodes can read/write data.  The host/port for
  * this server is reported to the NameNode, which then sends that
@@ -431,6 +436,8 @@ public class DataNode extends ReconfigurableBase
     try {
       hostName = getHostName(conf);
       LOG.info("Configured hostname is " + hostName);
+
+      // 启动DataNode
       startDataNode(conf, dataDirs, resources);
     } catch (IOException ie) {
       shutdown();
@@ -935,8 +942,11 @@ public class DataNode extends ReconfigurableBase
       DomainPeerServer domainPeerServer =
                 getDomainPeerServer(conf, streamingAddr.getPort());
       if (domainPeerServer != null) {
+
+        //
         this.localDataXceiverServer = new Daemon(threadGroup,
             new DataXceiverServer(domainPeerServer, conf, this));
+
         LOG.info("Listening on UNIX domain socket: " +
             domainPeerServer.getBindPath());
       }
@@ -1126,11 +1136,17 @@ public class DataNode extends ReconfigurableBase
     LOG.info("Starting DataNode with maxLockedMemory = " +
         dnConf.maxLockedMemory);
 
+
+    // 核心
     storage = new DataStorage();
     
     // global DN settings
     registerMXBean();
+
+
     initDataXceiver(conf);
+
+    //启动HTTPServer
     startInfoServer(conf);
     pauseMonitor = new JvmPauseMonitor(conf);
     pauseMonitor.start();
@@ -1142,12 +1158,21 @@ public class DataNode extends ReconfigurableBase
     dnUserName = UserGroupInformation.getCurrentUser().getShortUserName();
     LOG.info("dnUserName = " + dnUserName);
     LOG.info("supergroup = " + supergroup);
+
+    // 启动RPC服务端
     initIpcServer(conf);
 
     metrics = DataNodeMetrics.create(conf, getDisplayName());
     metrics.getJvmMetrics().setPauseMonitor(pauseMonitor);
-    
+
+
+    // 正常情况下只有一个BlockPool
+    // 联邦下会有多个Namenode,
+    // 每个联邦都有一个BlockPool
     blockPoolManager = new BlockPoolManager(this);
+
+    // 向Namenode进行注册
+    // 向Namenode进行心跳
     blockPoolManager.refreshNamenodes(conf);
 
     // Create the ReadaheadPool from the DataNode context so we can
@@ -2394,13 +2419,21 @@ public class DataNode extends ReconfigurableBase
     FsPermission permission = new FsPermission(
         conf.get(DFS_DATANODE_DATA_DIR_PERMISSION_KEY,
                  DFS_DATANODE_DATA_DIR_PERMISSION_DEFAULT));
+
+    // 检测目录是否有读写权限
     DataNodeDiskChecker dataNodeDiskChecker =
         new DataNodeDiskChecker(permission);
+
+
     List<StorageLocation> locations =
         checkStorageLocations(dataDirs, localFS, dataNodeDiskChecker);
+
+
     DefaultMetricsSystem.initialize("DataNode");
 
     assert locations.size() > 0 : "number of data directories should be > 0";
+
+
     return new DataNode(conf, locations, resources);
   }
 

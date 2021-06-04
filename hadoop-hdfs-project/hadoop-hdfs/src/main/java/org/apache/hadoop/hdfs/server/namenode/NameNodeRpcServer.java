@@ -304,6 +304,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
           .build();
 
       // Add all the RPC protocols that the namenode implements
+        // 添加协议
       DFSUtil.addPBProtocol(conf, HAServiceProtocolPB.class, haPbService,
           serviceRpcServer);
       DFSUtil.addPBProtocol(conf, NamenodeProtocolPB.class, NNPbService,
@@ -619,9 +620,13 @@ class NameNodeRpcServer implements NamenodeProtocols {
     try {
       PermissionStatus perm = new PermissionStatus(getRemoteUser()
           .getShortUserName(), null, masked);
+
+
+      //
       status = namesystem.startFile(src, perm, clientName, clientMachine,
           flag.get(), createParent, replication, blockSize, supportedVersions,
           cacheEntry != null);
+
     } finally {
       RetryCache.setState(cacheEntry, status != null, status);
     }
@@ -719,6 +724,8 @@ class NameNodeRpcServer implements NamenodeProtocols {
     }
     List<String> favoredNodesList = (favoredNodes == null) ? null
         : Arrays.asList(favoredNodes);
+
+    // 获取block
     LocatedBlock locatedBlock = namesystem.getAdditionalBlock(src, fileId,
         clientName, previous, excludedNodesSet, favoredNodesList);
     if (locatedBlock != null)

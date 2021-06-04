@@ -110,6 +110,8 @@ public abstract class AbstractService implements Service {
    */
   public AbstractService(String name) {
     this.name = name;
+
+    // 管理的就是Service的状态, 总共有四种
     stateModel = new ServiceStateModel(name);
   }
 

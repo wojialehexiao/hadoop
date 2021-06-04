@@ -55,6 +55,8 @@ public class StandbyState extends HAState {
   @Override
   public void enterState(HAContext context) throws ServiceFailedException {
     try {
+
+      //启动Standby服务
       context.startStandbyServices();
     } catch (IOException e) {
       throw new ServiceFailedException("Failed to start standby services", e);

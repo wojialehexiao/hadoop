@@ -110,7 +110,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * The ResourceManager is the main class that is a set of components.
  * "I am the ResourceManager. All your resources belong to us..."
- *
+ * 要注意 构造方法 init方法 start方法
  */
 @SuppressWarnings("unchecked")
 public class ResourceManager extends CompositeService implements Recoverable {
@@ -186,12 +186,17 @@ public class ResourceManager extends CompositeService implements Recoverable {
   @Override
   protected void serviceInit(Configuration conf) throws Exception {
     this.conf = conf;
+
+    // 初始化上下文对象
     this.rmContext = new RMContextImpl();
-    
+
+
+    // 配置文件加载
     this.configurationProvider =
         ConfigurationProviderFactory.getConfigurationProvider(conf);
     this.configurationProvider.init(this.conf);
     rmContext.setConfigurationProvider(configurationProvider);
+
 
     // load core-site.xml
     InputStream coreSiteXMLInputStream =
@@ -223,7 +228,11 @@ public class ResourceManager extends CompositeService implements Recoverable {
     
     // Set HA configuration should be done before login
     this.rmContext.setHAEnabled(HAUtil.isHAEnabled(this.conf));
+
+    // 是为HA模式
     if (this.rmContext.isHAEnabled()) {
+
+      // 校验HA所需参数
       HAUtil.verifyAndSetConfiguration(this.conf);
     }
     
@@ -238,21 +247,32 @@ public class ResourceManager extends CompositeService implements Recoverable {
     }
 
     // register the handlers for all AlwaysOn services using setupDispatcher().
+    //
     rmDispatcher = setupDispatcher();
+    // 添加Service
     addIfService(rmDispatcher);
+
+
     rmContext.setDispatcher(rmDispatcher);
 
     adminService = createAdminService();
     addService(adminService);
+
+
     rmContext.setRMAdminService(adminService);
     
     rmContext.setYarnConfiguration(conf);
-    
+
+
+    // 只有Active的ResourceManager才会启动的服务
     createAndInitActiveServices();
 
+
+    // webapp端口
     webAppAddress = WebAppUtils.getWebAppBindURL(this.conf,
                       YarnConfiguration.RM_BIND_HOST,
                       WebAppUtils.getRMWebAppURLWithoutScheme(this.conf));
+
 
     super.serviceInit(this.conf);
   }
@@ -981,6 +1001,8 @@ public class ResourceManager extends CompositeService implements Recoverable {
    */
   protected void createAndInitActiveServices() throws Exception {
     activeServices = new RMActiveServices(this);
+
+    //
     activeServices.init(conf);
   }
 

@@ -182,7 +182,10 @@ public class StandbyCheckpointer {
       } else {
         imageType = NameNodeFile.IMAGE;
       }
+
+      // 将元数据写到磁盘
       img.saveNamespace(namesystem, imageType, canceler);
+
       txid = img.getStorage().getMostRecentCheckpointTxId();
       assert txid == thisCheckpointTxId : "expected to save checkpoint at txid=" +
         thisCheckpointTxId + " but instead saved at txid=" + txid;
@@ -199,6 +202,7 @@ public class StandbyCheckpointer {
     // Upload the saved checkpoint back to the active
     // Do this in a separate thread to avoid blocking transition to active
     // See HDFS-4816
+    // 启动线程替换ActiveNameNode中的Image文件
     ExecutorService executor =
         Executors.newSingleThreadExecutor(uploadThreadFactory);
     Future<Void> upload = executor.submit(new Callable<Void>() {
@@ -320,18 +324,27 @@ public class StandbyCheckpointer {
           }
           
           final long now = monotonicNow();
+
+          // 获取距离上次checkpoint, 到现在差多少数据
           final long uncheckpointed = countUncheckpointedTxns();
+
+          // 获取距离上次checkpoint时间
           final long secsSinceLast = (now - lastCheckpointTime) / 1000;
           
           boolean needCheckpoint = needRollbackCheckpoint;
           if (needCheckpoint) {
             LOG.info("Triggering a rollback fsimage for rolling upgrade.");
+
+            // 如果距离上次checkpoint, 到现在差数据条数大于100W
           } else if (uncheckpointed >= checkpointConf.getTxnCount()) {
             LOG.info("Triggering checkpoint because there have been " + 
                 uncheckpointed + " txns since the last checkpoint, which " +
                 "exceeds the configured threshold " +
                 checkpointConf.getTxnCount());
             needCheckpoint = true;
+
+
+            // 距离上次checkpoint超过1小时
           } else if (secsSinceLast >= checkpointConf.getPeriod()) {
             LOG.info("Triggering checkpoint because it has been " +
                 secsSinceLast + " seconds since the last checkpoint, which " +

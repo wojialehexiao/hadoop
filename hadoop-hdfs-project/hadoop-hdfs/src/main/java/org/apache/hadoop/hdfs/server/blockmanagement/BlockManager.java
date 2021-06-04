@@ -450,7 +450,11 @@ public class BlockManager {
 
   public void activate(Configuration conf) {
     pendingReplications.start();
+
+    // 启动心跳服务
     datanodeManager.activate(conf);
+
+
     this.replicationThread.start();
   }
 
@@ -1099,7 +1103,10 @@ public class BlockManager {
     StringBuilder datanodes = new StringBuilder();
     for(DatanodeStorageInfo storage : blocksMap.getStorages(b, State.NORMAL)) {
       final DatanodeDescriptor node = storage.getDatanodeDescriptor();
+
+      // 添加到失效的Block块中
       invalidateBlocks.add(b, node, false);
+
       datanodes.append(node).append(" ");
     }
     if (datanodes.length() != 0) {
@@ -3358,7 +3365,10 @@ public class BlockManager {
     // from the namespace, since the removal of the associated
     // file already removes them from the block map below.
     block.setNumBytes(BlockCommand.NO_ACK);
+
+    // 添加到失效
     addToInvalidates(block);
+
     corruptReplicas.removeFromCorruptReplicasMap(block);
     blocksMap.removeBlock(block);
     // Remove the block from pendingReplications and neededReplications
@@ -3651,6 +3661,7 @@ public class BlockManager {
     final int nodesToProcess = (int) Math.ceil(numlive
         * this.blocksInvalidateWorkPct);
 
+    // 副本
     int workFound = this.computeReplicationWork(blocksToProcess);
 
     // Update counters
@@ -3661,6 +3672,8 @@ public class BlockManager {
     } finally {
       namesystem.writeUnlock();
     }
+
+    // 删除
     workFound += this.computeInvalidateWork(nodesToProcess);
     return workFound;
   }

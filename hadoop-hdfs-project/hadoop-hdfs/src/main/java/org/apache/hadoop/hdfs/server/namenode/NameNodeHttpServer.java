@@ -138,7 +138,11 @@ public class NameNodeHttpServer {
 
     httpServer.setAttribute(NAMENODE_ATTRIBUTE_KEY, nn);
     httpServer.setAttribute(JspHelper.CURRENT_CONF, conf);
+
+    // 初始化Servlet
     setupServlets(httpServer, conf);
+
+
     httpServer.start();
 
     int connIdx = 0;
@@ -250,8 +254,12 @@ public class NameNodeHttpServer {
         CancelDelegationTokenServlet.class, true);
     httpServer.addInternalServlet("fsck", "/fsck", FsckServlet.class,
         true);
+
+
     httpServer.addInternalServlet("imagetransfer", ImageServlet.PATH_SPEC,
         ImageServlet.class, true);
+
+
     httpServer.addInternalServlet("listPaths", "/listPaths/*",
         ListPathsServlet.class, false);
     httpServer.addInternalServlet("data", "/data/*",

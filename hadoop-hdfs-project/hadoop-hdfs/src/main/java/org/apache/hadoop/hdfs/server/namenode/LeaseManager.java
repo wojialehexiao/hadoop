@@ -454,6 +454,7 @@ public class LeaseManager {
   }
   
   /** Check the leases beginning from the oldest.
+   * 检查租约
    *  @return true is sync is needed.
    */
   @VisibleForTesting

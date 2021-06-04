@@ -30,7 +30,11 @@ import org.apache.hadoop.io.DataOutputBuffer;
  */
 class QuorumOutputStream extends EditLogOutputStream {
   private final AsyncLoggerSet loggers;
+
+  //
   private EditsDoubleBuffer buf;
+
+
   private final long segmentTxId;
   private final int writeTimeoutMs;
 
@@ -101,9 +105,12 @@ class QuorumOutputStream extends EditLogOutputStream {
       byte[] data = bufToSend.getData();
       assert data.length == bufToSend.getLength();
 
+      // 发送到JournalNode
       QuorumCall<AsyncLogger, Void> qcall = loggers.sendEdits(
           segmentTxId, firstTxToFlush,
           numReadyTxns, data);
+
+
       loggers.waitForWriteQuorum(qcall, writeTimeoutMs, "sendEdits");
       
       // Since we successfully wrote this batch, let the loggers know. Any future

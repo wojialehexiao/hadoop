@@ -504,20 +504,24 @@ class BlockReceiver implements Closeable {
     // update received bytes
     final long firstByteInBlock = offsetInBlock;
     offsetInBlock += len;
+
     if (replicaInfo.getNumBytes() < offsetInBlock) {
       replicaInfo.setNumBytes(offsetInBlock);
     }
     
     // put in queue for pending acks, unless sync was requested
+    // 第一步: 接收到数据先把Packet放入到ack队列中
     if (responder != null && !syncBlock && !shouldVerifyChecksum()) {
       ((PacketResponder) responder.getRunnable()).enqueue(seqno,
           lastPacketInBlock, offsetInBlock, Status.SUCCESS);
     }
 
     //First write the packet to the mirror:
+    // 第二步: 把当前packet发送给下游节点
     if (mirrorOut != null && !mirrorError) {
       try {
         long begin = Time.monotonicNow();
+        // 发送给下游
         packetReceiver.mirrorPacketTo(mirrorOut);
         mirrorOut.flush();
         long duration = Time.monotonicNow() - begin;
@@ -552,6 +556,7 @@ class BlockReceiver implements Closeable {
 
       if (checksumReceivedLen > 0 && shouldVerifyChecksum()) {
         try {
+          // 校验数据
           verifyChunks(dataBuf, checksumBuf);
         } catch (IOException ioe) {
           // checksum error detected locally. there is no reason to continue.
@@ -615,8 +620,13 @@ class BlockReceiver implements Closeable {
           
           // Write data to disk.
           long begin = Time.monotonicNow();
+
+
+          // 将数据写入到本地磁盘
           out.write(dataBuf.array(), startByteToDisk, numBytesToDisk);
           long duration = Time.monotonicNow() - begin;
+
+
           if (duration > datanodeSlowLogThresholdMs) {
             LOG.warn("Slow BlockReceiver write data to disk cost:" + duration
                 + "ms (threshold=" + datanodeSlowLogThresholdMs + "ms)");
@@ -778,12 +788,17 @@ class BlockReceiver implements Closeable {
       this.isReplaceBlock = isReplaceBlock;
 
     try {
+
+      //
       if (isClient && !isTransfer) {
+
+        // 启动PacketResponder
         responder = new Daemon(datanode.threadGroup, 
             new PacketResponder(replyOut, mirrIn, downstreams));
         responder.start(); // start thread to processes responses
       }
 
+      // 不断接收数据
       while (receivePacket() >= 0) { /* Receive until the last packet */ }
 
       // wait for all outstanding packet responses. And then
@@ -1160,6 +1175,7 @@ class BlockReceiver implements Closeable {
     public void run() {
       boolean lastPacketInBlock = false;
       final long startTime = ClientTraceLog.isInfoEnabled() ? System.nanoTime() : 0;
+
       while (isRunning() && !lastPacketInBlock) {
         long totalAckTimeNanos = 0;
         boolean isInterrupted = false;
@@ -1170,8 +1186,11 @@ class BlockReceiver implements Closeable {
           long seqno = PipelineAck.UNKOWN_SEQNO;
           long ackRecvNanoTime = 0;
           try {
+
+            // 如果不是数据流管道最后一个节点
             if (type != PacketResponderType.LAST_IN_PIPELINE && !mirrorError) {
               // read an ack from downstream datanode
+              // 从下游读取ACK
               ack.readFields(downstreamIn);
               ackRecvNanoTime = System.nanoTime();
               if (LOG.isDebugEnabled()) {
@@ -1188,12 +1207,16 @@ class BlockReceiver implements Closeable {
               }
               seqno = ack.getSeqno();
             }
+
+
+            // 如果是数据流管道最后一个节点
             if (seqno != PipelineAck.UNKOWN_SEQNO
                 || type == PacketResponderType.LAST_IN_PIPELINE) {
               pkt = waitForAckHead(seqno);
               if (!isRunning()) {
                 break;
               }
+
               expected = pkt.seqno;
               if (type == PacketResponderType.HAS_DOWNSTREAM_IN_PIPELINE
                   && seqno != expected) {
@@ -1258,9 +1281,13 @@ class BlockReceiver implements Closeable {
           }
 
           Status myStatus = pkt != null ? pkt.ackStatus : Status.SUCCESS;
+
+          // 发送ack
           sendAckUpstream(ack, expected, totalAckTimeNanos,
             (pkt != null ? pkt.offsetInBlock : 0),
             PipelineAck.combineHeader(datanode.getECN(), myStatus));
+
+
           if (pkt != null) {
             // remove the packet from the ack queue
             removeAckHead();
@@ -1401,10 +1428,15 @@ class BlockReceiver implements Closeable {
       }
       PipelineAck replyAck = new PipelineAck(seqno, replies,
           totalAckTimeNanos);
+
+
+      // 更新offset
       if (replyAck.isSuccess()
           && offsetInBlock > replicaInfo.getBytesAcked()) {
         replicaInfo.setBytesAcked(offsetInBlock);
       }
+
+
       // send my ack back to upstream datanode
       long begin = Time.monotonicNow();
       replyAck.write(upstreamOut);

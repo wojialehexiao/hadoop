@@ -111,9 +111,16 @@ class QuorumCall<KEY, RESULT> {
     long et = st + millis;
     while (true) {
       checkAssertionErrors();
+
+      // 是否全返回
       if (minResponses > 0 && countResponses() >= minResponses) return;
+
+      // 是否大于半数返回
       if (minSuccesses > 0 && countSuccesses() >= minSuccesses) return;
+
+
       if (maxExceptions >= 0 && countExceptions() > maxExceptions) return;
+
       long now = Time.monotonicNow();
       
       if (now > nextLogTime) {

@@ -54,18 +54,24 @@ class FSDirMkdirOp {
     byte[][] pathComponents = FSDirectory.getPathComponentsForReservedPath(src);
     fsd.writeLock();
     try {
+
+      // 解析目录
       src = fsd.resolvePath(pc, src, pathComponents);
+
       INodesInPath iip = fsd.getINodesInPath4Write(src);
       if (fsd.isPermissionEnabled()) {
         fsd.checkTraverse(pc, iip);
       }
 
+      // 获取最后一个INode
       final INode lastINode = iip.getLastINode();
+
       if (lastINode != null && lastINode.isFile()) {
         throw new FileAlreadyExistsException("Path is not a directory: " + src);
       }
 
       INodesInPath existing = lastINode != null ? iip : iip.getExistingINodes();
+
       if (lastINode == null) {
         if (fsd.isPermissionEnabled()) {
           fsd.checkAncestorAccess(pc, iip, FsAction.WRITE);
@@ -80,13 +86,19 @@ class FSDirMkdirOp {
         // create multiple inodes.
         fsn.checkFsObjectLimit();
 
+        // 创建几个目录
         List<String> nonExisting = iip.getPath(existing.length(),
             iip.length() - existing.length());
+
+
         int length = nonExisting.size();
+
+        // 创建多个目录
         if (length > 1) {
           List<String> ancestors = nonExisting.subList(0, length - 1);
           // Ensure that the user can traversal the path by adding implicit
           // u+wx permission to all ancestor directories
+          // 创建目录
           existing = createChildrenDirectories(fsd, existing, ancestors,
               addImplicitUwx(permissions, permissions));
           if (existing == null) {
@@ -162,6 +174,7 @@ class FSDirMkdirOp {
       throws IOException {
     assert fsd.hasWriteLock();
 
+    // 按个创建目录
     for (String component : children) {
       existing = createSingleDirectory(fsd, existing, component, perm);
       if (existing == null) {
@@ -188,8 +201,12 @@ class FSDirMkdirOp {
       INodesInPath existing, String localName, PermissionStatus perm)
       throws IOException {
     assert fsd.hasWriteLock();
+
+    // 写到目录树中
     existing = unprotectedMkdir(fsd, fsd.allocateNewInodeId(), existing,
         localName.getBytes(Charsets.UTF_8), perm, null, now());
+
+
     if (existing == null) {
       return null;
     }
@@ -200,7 +217,11 @@ class FSDirMkdirOp {
     NameNode.getNameNodeMetrics().incrFilesCreated();
 
     String cur = existing.getPath();
+
+    // 写edit日志
     fsd.getEditLog().logMkDir(cur, newNode);
+
+
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("mkdirs: created directory " + cur);
     }

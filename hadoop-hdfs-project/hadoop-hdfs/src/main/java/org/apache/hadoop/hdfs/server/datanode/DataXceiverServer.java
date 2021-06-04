@@ -145,6 +145,8 @@ class DataXceiverServer implements Runnable {
         new Daemon(datanode.threadGroup,
             DataXceiver.create(peer, datanode, this))
             .start();
+
+
       } catch (SocketTimeoutException ignored) {
         // wake up to see if should continue to run
       } catch (AsynchronousCloseException ace) {

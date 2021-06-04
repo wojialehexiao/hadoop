@@ -70,9 +70,13 @@ public abstract class Receiver implements DataTransferProtocol {
     case READ_BLOCK:
       opReadBlock();
       break;
+
+      // 写数据
     case WRITE_BLOCK:
       opWriteBlock(in);
       break;
+
+
     case REPLACE_BLOCK:
       opReplaceBlock(in);
       break;

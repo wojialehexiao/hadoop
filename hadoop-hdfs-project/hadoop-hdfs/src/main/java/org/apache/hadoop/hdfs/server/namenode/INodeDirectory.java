@@ -67,6 +67,8 @@ public class INodeDirectory extends INodeWithAdditionalFields
   }
 
   protected static final int DEFAULT_FILES_PER_DIRECTORY = 5;
+
+  // 根目录没有名字
   final static byte[] ROOT_NAME = DFSUtil.string2Bytes("");
 
   private List<INode> children = null;

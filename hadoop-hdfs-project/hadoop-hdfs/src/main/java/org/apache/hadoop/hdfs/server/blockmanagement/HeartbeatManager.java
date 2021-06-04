@@ -221,8 +221,10 @@ class HeartbeatManager implements DatanodeStatistics {
       int xceiverCount, int failedVolumes,
       VolumeFailureSummary volumeFailureSummary) {
     stats.subtract(node);
+
     node.updateHeartbeat(reports, cacheCapacity, cacheUsed,
       xceiverCount, failedVolumes, volumeFailureSummary);
+
     stats.add(node);
   }
 
@@ -283,14 +285,22 @@ class HeartbeatManager implements DatanodeStatistics {
       int numOfStaleNodes = 0;
       int numOfStaleStorages = 0;
       synchronized(this) {
+
+        // 遍历每个DataNode的信息
         for (DatanodeDescriptor d : datanodes) {
+
+          // 判断DataNode是否dead
+          // 10分30秒, 为什么这么久, 防止网络抖动,导致异常的block块复制
           if (dead == null && dm.isDatanodeDead(d)) {
             stats.incrExpiredHeartbeats();
             dead = d;
           }
+
           if (d.isStale(dm.getStaleInterval())) {
             numOfStaleNodes++;
           }
+
+
           DatanodeStorageInfo[] storageInfos = d.getStorageInfos();
           for(DatanodeStorageInfo storageInfo : storageInfos) {
             if (storageInfo.areBlockContentsStale()) {
@@ -320,6 +330,8 @@ class HeartbeatManager implements DatanodeStatistics {
             return;
           }
           synchronized(this) {
+
+            // 删除dead的DataNode注册信息
             dm.removeDeadDatanode(dead);
           }
         } finally {
@@ -355,6 +367,8 @@ class HeartbeatManager implements DatanodeStatistics {
         try {
           final long now = Time.monotonicNow();
           if (lastHeartbeatCheck + heartbeatRecheckInterval < now) {
+
+            // 检查心跳
             heartbeatCheck();
             lastHeartbeatCheck = now;
           }

@@ -439,6 +439,8 @@ public class ImageServlet extends HttpServlet {
     return params;
   }
 
+
+  // 处理Image替换流程
   @Override
   protected void doPut(final HttpServletRequest request,
       final HttpServletResponse response) throws ServletException, IOException {
@@ -497,6 +499,7 @@ public class ImageServlet extends HttpServlet {
                   }
                   // Now that we have a new checkpoint, we might be able to
                   // remove some old ones.
+                  // 清理旧image文件
                   nnImage.purgeOldStorage(nnf);
                 } finally {
                   stream.close();

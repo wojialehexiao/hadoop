@@ -428,6 +428,7 @@ public class YarnConfiguration extends Configuration {
   public static final String RM_HA_ENABLED = RM_HA_PREFIX + "enabled";
   public static final boolean DEFAULT_RM_HA_ENABLED = false;
 
+
   public static final String RM_HA_IDS = RM_HA_PREFIX + "rm-ids";
   public static final String RM_HA_ID = RM_HA_PREFIX + "id";
 

@@ -140,8 +140,12 @@ public class FSEditLogLoader {
     try {
       long startTime = monotonicNow();
       FSImage.LOG.info("Start loading edits file " + edits.getName());
+
+
       long numEdits = loadEditRecords(edits, false, expectedStartingTxId,
           startOpt, recovery);
+
+
       FSImage.LOG.info("Edits file " + edits.getName() 
           + " of size " + edits.length() + " edits # " + numEdits 
           + " loaded in " + (monotonicNow()-startTime)/1000 + " seconds");
@@ -153,6 +157,8 @@ public class FSEditLogLoader {
     }
   }
 
+
+  // 读取元数据
   long loadEditRecords(EditLogInputStream in, boolean closeOnExit,
       long expectedStartingTxId, StartupOption startOpt,
       MetaRecoveryContext recovery) throws IOException {
@@ -187,7 +193,10 @@ public class FSEditLogLoader {
         try {
           FSEditLogOp op;
           try {
+
+            // 从JournalNode读取元数据
             op = in.readOp();
+
             if (op == null) {
               break;
             }
@@ -231,6 +240,8 @@ public class FSEditLogLoader {
               LOG.trace("op=" + op + ", startOpt=" + startOpt
                   + ", numEdits=" + numEdits + ", totalEdits=" + totalEdits);
             }
+
+            // 写入到文件树
             long inodeId = applyEditLogOp(op, fsDir, startOpt,
                 in.getVersion(true), lastInodeId);
             if (lastInodeId < inodeId) {

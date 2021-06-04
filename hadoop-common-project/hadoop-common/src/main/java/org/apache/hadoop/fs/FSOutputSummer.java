@@ -160,6 +160,11 @@ abstract public class FSOutputSummer extends OutputStream {
     int partialLen = bufLen % sum.getBytesPerChecksum();
     int lenToFlush = flushPartial ? bufLen : bufLen - partialLen;
     if (lenToFlush != 0) {
+
+      // 核心代码
+      // block
+      // package (64K)
+      // chunk = chunk(512B) + 4 checksum
       writeChecksumChunks(buf, 0, lenToFlush);
       if (!flushPartial || keep) {
         count = partialLen;
@@ -200,9 +205,13 @@ abstract public class FSOutputSummer extends OutputStream {
   private void writeChecksumChunks(byte b[], int off, int len)
   throws IOException {
     sum.calculateChunkedSums(b, off, len, checksum, 0);
+
+    //
     for (int i = 0; i < len; i += sum.getBytesPerChecksum()) {
       int chunkLen = Math.min(sum.getBytesPerChecksum(), len - i);
       int ckOffset = i / sum.getBytesPerChecksum() * getChecksumSize();
+
+      // 一个Chunk的写
       writeChunk(b, off + i, chunkLen, checksum, ckOffset, getChecksumSize());
     }
   }

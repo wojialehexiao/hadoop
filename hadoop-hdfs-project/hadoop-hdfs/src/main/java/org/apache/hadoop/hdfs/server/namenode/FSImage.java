@@ -829,6 +829,8 @@ public class FSImage implements Closeable {
         LOG.info("Reading " + editIn + " expecting start txid #" +
               (lastAppliedTxId + 1));
         try {
+
+          // 获取Edit日志
           loader.loadFSEdits(editIn, lastAppliedTxId + 1, startOpt, recovery);
         } finally {
           // Update lastAppliedTxId even in case of error, since some ops may
@@ -1099,6 +1101,8 @@ public class FSImage implements Closeable {
     }
     try {
       try {
+
+        // 保存到多个目录
         saveFSImageInAllDirs(source, nnf, imageTxId, canceler);
         storage.writeAll();
       } finally {

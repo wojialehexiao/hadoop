@@ -104,11 +104,15 @@ class InvalidateBlocks {
    */
   synchronized void add(final Block block, final DatanodeInfo datanode,
       final boolean log) {
+
+
     LightWeightHashSet<Block> set = node2blocks.get(datanode);
     if (set == null) {
       set = new LightWeightHashSet<Block>();
       node2blocks.put(datanode, set);
     }
+
+    // 将待删除块, 放到对应DataNode的待删除列表, 以便下一次心跳发送出去
     if (set.add(block)) {
       numBlocks++;
       if (log) {

@@ -79,6 +79,8 @@ public class Sender implements DataTransferProtocol {
     }
     op(out, opcode);
     proto.writeDelimitedTo(out);
+
+    // 将数据通过Socket写出去
     out.flush();
   }
 
@@ -158,6 +160,7 @@ public class Sender implements DataTransferProtocol {
       proto.setSource(PBHelper.convertDatanodeInfo(source));
     }
 
+    // 发送数据
     send(out, Op.WRITE_BLOCK, proto.build());
   }
 

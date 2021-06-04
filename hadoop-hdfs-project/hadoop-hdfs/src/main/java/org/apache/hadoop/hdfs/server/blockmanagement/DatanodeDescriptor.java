@@ -456,7 +456,11 @@ public class DatanodeDescriptor extends DatanodeInfo {
     setCacheCapacity(cacheCapacity);
     setCacheUsed(cacheUsed);
     setXceiverCount(xceiverCount);
+
+    // 更新上次心跳时间
     setLastUpdate(Time.now());
+
+
     setLastUpdateMonotonic(Time.monotonicNow());
     this.volumeFailures = volFailures;
     this.volumeFailureSummary = volumeFailureSummary;
@@ -475,6 +479,7 @@ public class DatanodeDescriptor extends DatanodeInfo {
     rollBlocksScheduled(getLastUpdateMonotonic());
 
     // Update total metrics for the node.
+    // 更新度量信息
     setCapacity(totalCapacity);
     setRemaining(totalRemaining);
     setBlockPoolUsed(totalBlockPoolUsed);

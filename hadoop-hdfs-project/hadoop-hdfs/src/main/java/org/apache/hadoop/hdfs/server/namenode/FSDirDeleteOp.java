@@ -214,6 +214,7 @@ class FSDirDeleteOp {
     targetNode.recordModification(latestSnapshot);
 
     // Remove the node from the namespace
+    // 从目录树删除
     long removed = fsd.removeLastINode(iip);
     if (removed == -1) {
       return -1;

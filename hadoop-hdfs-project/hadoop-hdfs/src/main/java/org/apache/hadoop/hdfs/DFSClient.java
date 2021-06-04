@@ -1697,10 +1697,15 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
     if(LOG.isDebugEnabled()) {
       LOG.debug(src + ": masked=" + masked);
     }
+
+
+
     final DFSOutputStream result = DFSOutputStream.newStreamForCreate(this,
         src, masked, flag, createParent, replication, blockSize, progress,
         buffersize, dfsClientConf.createChecksum(checksumOpt),
         getFavoredNodesStr(favoredNodes));
+
+    // 启动周期性续约
     beginFileLease(result.getFileId(), result);
     return result;
   }

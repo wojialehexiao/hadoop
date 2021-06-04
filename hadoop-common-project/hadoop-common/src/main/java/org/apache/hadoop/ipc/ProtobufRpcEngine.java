@@ -99,8 +99,11 @@ public class ProtobufRpcEngine implements RpcEngine {
       SocketFactory factory, int rpcTimeout, RetryPolicy connectionRetryPolicy,
       AtomicBoolean fallbackToSimpleAuth) throws IOException {
 
+    // 这里
     final Invoker invoker = new Invoker(protocol, addr, ticket, conf, factory,
         rpcTimeout, connectionRetryPolicy, fallbackToSimpleAuth);
+
+
     return new ProtocolProxy<T>(protocol, (T) Proxy.newProxyInstance(
         protocol.getClassLoader(), new Class[]{protocol}, invoker), false);
   }
@@ -130,6 +133,8 @@ public class ProtobufRpcEngine implements RpcEngine {
         UserGroupInformation ticket, Configuration conf, SocketFactory factory,
         int rpcTimeout, RetryPolicy connectionRetryPolicy,
         AtomicBoolean fallbackToSimpleAuth) throws IOException {
+
+      // 这里
       this(protocol, Client.ConnectionId.getConnectionId(
           addr, protocol, ticket, rpcTimeout, connectionRetryPolicy, conf),
           conf, factory);
@@ -142,8 +147,13 @@ public class ProtobufRpcEngine implements RpcEngine {
     private Invoker(Class<?> protocol, Client.ConnectionId connId,
         Configuration conf, SocketFactory factory) {
       this.remoteId = connId;
+
+      // 真正构建RPC客户端
       this.client = CLIENTS.getClient(conf, factory, RpcResponseWrapper.class);
+
+
       this.protocolName = RPC.getProtocolName(protocol);
+
       this.clientProtocolVersion = RPC
           .getProtocolVersion(protocol);
     }
@@ -187,6 +197,9 @@ public class ProtobufRpcEngine implements RpcEngine {
      * ServiceException by getting the cause from the ServiceException. If the
      * cause is RemoteException, then unwrap it to get the exception thrown by
      * the server.
+     *
+     *
+     * 真正RPC请求时调用的方法
      */
     @Override
     public Object invoke(Object proxy, Method method, Object[] args)
@@ -226,6 +239,8 @@ public class ProtobufRpcEngine implements RpcEngine {
       Message theRequest = (Message) args[1];
       final RpcResponseWrapper val;
       try {
+
+        // 真正调用
         val = (RpcResponseWrapper) client.call(RPC.RpcKind.RPC_PROTOCOL_BUFFER,
             new RpcRequestWrapper(rpcRequestHeader, theRequest), remoteId,
             fallbackToSimpleAuth);
@@ -591,9 +606,13 @@ public class ProtobufRpcEngine implements RpcEngine {
         long clientVersion = rpcRequest.getClientProtocolVersion();
         if (server.verbose)
           LOG.info("Call: protocol=" + protocol + ", method=" + methodName);
-        
+
+
+
         ProtoClassProtoImpl protocolImpl = getProtocolImpl(server, protoName,
             clientVersion);
+
+
         BlockingService service = (BlockingService) protocolImpl.protocolImpl;
         MethodDescriptor methodDescriptor = service.getDescriptorForType()
             .findMethodByName(methodName);
@@ -613,7 +632,11 @@ public class ProtobufRpcEngine implements RpcEngine {
         Exception exception = null;
         try {
           server.rpcDetailedMetrics.init(protocolImpl.protocolClass);
+
+
+          // 这里是真正的调用
           result = service.callBlockingMethod(methodDescriptor, null, param);
+
         } catch (ServiceException e) {
           exception = (Exception) e.getCause();
           throw (Exception) e.getCause();

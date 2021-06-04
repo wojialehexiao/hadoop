@@ -216,6 +216,8 @@ public class JournalSet implements JournalManager {
   @Override
   public EditLogOutputStream startLogSegment(final long txId,
       final int layoutVersion) throws IOException {
+
+    // 依次调用
     mapJournalsAndReportErrors(new JournalClosure() {
       @Override
       public void apply(JournalAndStream jas) throws IOException {

@@ -640,9 +640,13 @@ public class NameNode implements NameNodeStatusMXBean {
 
     this.spanReceiverHost = SpanReceiverHost.getInstance(conf);
 
+    //加载image文件和edit文件
     loadNamesystem(conf);
 
+    // 创建rpcServer, 对外提供服务
     rpcServer = createRpcServer(conf);
+
+
     if (clientNamenodeAddress == null) {
       // This is expected for MiniDFSCluster. Set it now using 
       // the RPC server's bind address.
@@ -659,7 +663,9 @@ public class NameNode implements NameNodeStatusMXBean {
     pauseMonitor = new JvmPauseMonitor(conf);
     pauseMonitor.start();
     metrics.getJvmMetrics().setPauseMonitor(pauseMonitor);
-    
+
+    // 检查namenode磁盘是否充足
+    // 检查安全模式
     startCommonServices(conf);
   }
   
@@ -674,7 +680,11 @@ public class NameNode implements NameNodeStatusMXBean {
 
   /** Start the services common to active and standby states */
   private void startCommonServices(Configuration conf) throws IOException {
+
+    // 启动服务
     namesystem.startCommonServices(conf, haContext);
+
+
     registerNNSMXBean();
     if (NamenodeRole.NAMENODE != role) {
       startHttpServer(conf);
@@ -807,10 +817,15 @@ public class NameNode implements NameNodeStatusMXBean {
     this.haContext = createHAContext();
     try {
       initializeGenericKeys(conf, nsId, namenodeId);
+
+      // 初始化核心组件
       initialize(conf);
+
       try {
         haContext.writeLock();
         state.prepareToEnterState(haContext);
+
+        // HA同步代码在这里
         state.enterState(haContext);
       } finally {
         haContext.writeUnlock();

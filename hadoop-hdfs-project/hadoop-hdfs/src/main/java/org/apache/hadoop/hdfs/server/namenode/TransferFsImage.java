@@ -287,6 +287,7 @@ public class TransferFsImage {
       ImageServlet.setVerificationHeadersForPut(connection, imageFile);
 
       // Write the file to output stream.
+      // 上传
       writeFileToPutRequest(conf, connection, imageFile, canceler);
 
       int responseCode = connection.getResponseCode();
